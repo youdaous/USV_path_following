@@ -84,6 +84,7 @@ class USVTracking(gym.Env):
         )
 
     def step(self, action: np.array):
+        assert isinstance(action, np.ndarray)
         state = self.state
         state_position = self.state_position
         state_velocity = self.state_velocity
@@ -96,14 +97,18 @@ class USVTracking(gym.Env):
         C = np.array([[0, 0, -self.m22 * v], [0, 0, self.m11 * u],
                       [self.m22 * v, -self.m11 * u, 0]])
         action = action.reshape((-1, 1))
-        state_position_reshape = state_position.reshape((-1, 1))
-        state_velocity_reshape = state_velocity.reshape((-1, 1))
-
-        # 离散的运动学和动力学模型
-        self.state_position = state_position_reshape + self.sample_time * T @ state_velocity_reshape
-        self.state_velocity = state_velocity_reshape + self.sample_time * (self.Minv @ self.B @ (action + self.noise)
+        # state_position_reshape = state_position.reshape((-1, 1))
+        # state_velocity_reshape = state_velocity.reshape((-1, 1))
+        #
+        # # 离散的运动学和动力学模型，计算下一时刻的位置和速度
+        # self.state_position = state_position_reshape + self.sample_time * T @ state_velocity_reshape
+        # self.state_velocity = state_velocity_reshape + self.sample_time * (self.Minv @ self.B @ (action + self.noise)
+        #                                                                    - self.Minv @ (C + self.D)
+        #                                                                    @ state_velocity_reshape)
+        self.state_position = state_position + self.sample_time * T @ state_velocity
+        self.state_velocity = state_velocity + self.sample_time * (self.Minv @ self.B @ (action + self.noise)
                                                                            - self.Minv @ (C + self.D)
-                                                                           @ state_velocity_reshape)
+                                                                           @ state_velocity)
 
         # 搜索距离船最近点
         index_ref = self.index_ref
@@ -120,7 +125,7 @@ class USVTracking(gym.Env):
             index_count += 1
 
         # 终止判断
-        terminated = bool(self.index_ref == len(self.path_ref))
+        terminated = bool(self.index_ref + 1 == len(self.path_ref))
 
         # 下一时刻反馈状态量计算
         x = float(self.state_position[0])
@@ -143,7 +148,8 @@ class USVTracking(gym.Env):
                          self.path_ref[self.index_ref - 1][0]
         gama_ref_2order = math.atan2(dealt_y_2order, dealt_x_2order)
         self.state = np.array([vector_x, vector_y, theta, u, v, omega, gama_ref, gama_ref_2order], dtype=np.float32)
-
+        print(self.state)
+        print(x, y)
         # reward definition
         epsilon = -vector_y * math.cos(gama_ref) + vector_x * math.sin(gama_ref)
         gama_usv = math.atan2(u * math.sin(theta) + v * math.cos(theta), u * math.cos(theta) - v * math.sin(theta))
@@ -151,7 +157,7 @@ class USVTracking(gym.Env):
             -np.square(gama_ref - gama_usv))
 
         # 对越轨的状态进行限制和惩罚
-        if epsilon > 100 or not self.observation_space.contains(self.state):
+        if abs(epsilon) > 100 or not self.observation_space.contains(self.state):
             self.state_position = state_position
             self.state_velocity = state_velocity
             self.state = state
@@ -159,15 +165,19 @@ class USVTracking(gym.Env):
             reward = 0.
             print('overshoot!')
 
-        print(reward, self.state)
+        print(epsilon)
+        print('reward{}'.format(reward))
+
         return self.state, reward, terminated, False, {}
 
     def reset(self):
-        R = 5  # USV起点与路径起点的最大距离，在该圆内平均采样
+        # USV起点与路径起点的最大距离，在该圆内平均采样
+        R = 5
         theta_sample = np.random.uniform(0, 2 * np.pi)
         r = np.sqrt(np.random.uniform(0, R ** 2))
         x_start = self.path_ref[0][0] + r * np.cos(theta_sample)
         y_start = self.path_ref[0][1] + r * np.sin(theta_sample)
+        # 起始方向角
         theta_start = np.random.uniform(-np.pi, np.pi)
         self.state_position = np.array([x_start, y_start, theta_start], dtype=np.float32).reshape(3, 1)
         self.state_velocity = np.array([0., 0., 0.], dtype=np.float32).reshape(3, 1)

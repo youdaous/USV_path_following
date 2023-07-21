@@ -1,3 +1,5 @@
+import numpy as np
+
 from USVmodel import USVTracking
 import matplotlib.pyplot as plt
 # import numpy as np
@@ -11,7 +13,8 @@ print(env.state_position)
 print(env.state_velocity)
 while True:
     print(count)
-    action = env.action_space.sample()
+    # action = env.action_space.sample()
+    action = np.array([100, -100, 100, -100])
     observation, reward, done, _, _ = env.step(action)
     point = env.state_position[0:2]
     query.append(list(point))

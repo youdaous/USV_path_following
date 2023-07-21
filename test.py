@@ -57,8 +57,6 @@ from mpl_toolkits.mplot3d import Axes3D
 # print(type(math.cos(theta)))
 # print(T)
 
-x = np.ones((3, 1))
-x = float(x[0])
-print(type(x))
+
 
 
