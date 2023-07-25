@@ -56,7 +56,12 @@ from mpl_toolkits.mplot3d import Axes3D
 # T = np.array([[math.cos(theta), -math.sin(theta), 0.], [math.sin(theta), math.cos(theta), 0.], [0., 0., 1.]])
 # print(type(math.cos(theta)))
 # print(T)
-
+from USVmodel import USVTracking
+path_line = [[10, i] for i in range(1000)]
+env = USVTracking(path_line)
+obs_dim = env.observation_space.shape[0]
+act_dim = env.action_space.shape[0]
+print(obs_dim, act_dim)
 
 
 

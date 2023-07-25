@@ -1,49 +1,52 @@
-# import paddle.fluid as fluid
 import parl
-from parl import layers
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
 
 
 class Model(parl.Model):
-    def __init__(self, act_dim):
-        super().__init__()
-        self.actor_model = ActorModel(act_dim)
-        self.critic_model = CriticModel()
+    def __init__(self, obs_dim, act_dim):
+        super(Model, self).__init__()
+        self.actor_model = Actor(obs_dim, act_dim)
+        self.critic_model = Critic(obs_dim, act_dim)
 
     def policy(self, obs):
-        return self.actor_model.policy(obs)
+        return self.actor_model(obs)
 
-    def value(self, obs, act):
-        return self.critic_model.value(obs, act)
+    def value(self, obs, action):
+        return self.critic_model(obs, action)
 
     def get_actor_params(self):
         return self.actor_model.parameters()
 
+    def get_critic_params(self):
+        return self.critic_model.parameters()
 
-class ActorModel(parl.Model):
-    def __init__(self, act_dim):
-        super().__init__()
+
+class Actor(parl.Model):
+    def __init__(self, obs_dim, act_dim):
+        super(Actor, self).__init__()
         hid_size = 100
 
-        self.fc1 = layers.fc(size=hid_size, act='relu')
-        self.fc2 = layers.fc(size=act_dim, act='tanh')
+        self.l1 = nn.Linear(obs_dim, hid_size)
+        self.l2 = nn.Linear(hid_size, act_dim)
 
-    def policy(self, obs):
-        hid = self.fc1(obs)
-        means = self.fc2(hid)
+    def forward(self, obs):
+        hid = F.relu(self.l1(obs))
+        means = paddle.tanh(self.l2(hid))
         return means
 
 
-class CriticModel(parl.Model):
-    def __init__(self):
-        super().__init__()
+class Critic(parl.Model):
+    def __init__(self, obs_dim, act_dim):
+        super(Critic, self).__init__()
         hid_size = 100
 
-        self.fc1 = layers.fc(size=hid_size, act='relu')
-        self.fc2 = layers.fc(size=1, act=None)
+        self.l1 = nn.Linear(obs_dim + act_dim, hid_size)
+        self.l2 = nn.Linear(hid_size, 1)
 
-    def value(self, obs, act):
-        concat = layers.concat([obs, act], axis=1)
-        hid = self.fc1(concat)
-        Q = self.fc2(hid)
-        Q = layers.squeeze(Q, axes=[1])
+    def forward(self, obs, act):
+        concat = paddle.concat([obs, act], axis=1)
+        hid = F.relu(self.l1(concat))
+        Q = self.l2(hid)
         return Q

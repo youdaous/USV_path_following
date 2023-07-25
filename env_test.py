@@ -13,9 +13,9 @@ print(env.state_position)
 print(env.state_velocity)
 while True:
     print(count)
-    # action = env.action_space.sample()
-    action = np.array([100, -100, 100, -100])
-    observation, reward, done, _, _ = env.step(action)
+    action = env.action_space.sample()
+    # action = np.array([100, -100, 100, -100])
+    observation, reward, done, _ = env.step(action)
     point = env.state_position[0:2]
     query.append(list(point))
     count += 1

@@ -148,8 +148,8 @@ class USVTracking(gym.Env):
                          self.path_ref[self.index_ref - 1][0]
         gama_ref_2order = math.atan2(dealt_y_2order, dealt_x_2order)
         self.state = np.array([vector_x, vector_y, theta, u, v, omega, gama_ref, gama_ref_2order], dtype=np.float32)
-        print(self.state)
-        print(x, y)
+        # print(self.state)
+        # print(x, y)
         # reward definition
         epsilon = -vector_y * math.cos(gama_ref) + vector_x * math.sin(gama_ref)
         gama_usv = math.atan2(u * math.sin(theta) + v * math.cos(theta), u * math.cos(theta) - v * math.sin(theta))
@@ -163,12 +163,12 @@ class USVTracking(gym.Env):
             self.state = state
             self.index_ref = index_ref
             reward = 0.
-            print('overshoot!')
+            # print('overshoot!')
 
-        print(epsilon)
-        print('reward{}'.format(reward))
+        # print(epsilon)
+        # print('reward{}'.format(reward))
 
-        return self.state, reward, terminated, False, {}
+        return self.state, reward, terminated, {}
 
     def reset(self):
         # USV起点与路径起点的最大距离，在该圆内平均采样
